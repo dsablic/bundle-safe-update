@@ -6,12 +6,14 @@ RSpec.describe BundleSafeUpdate::GemChecker do
       BundleSafeUpdate::Config,
       cooldown_days: 14,
       ignore_gems: [],
-      ignore_prefixes: []
+      ignore_prefixes: [],
+      trusted_sources: []
     )
   end
 
   let(:api) { instance_double(BundleSafeUpdate::RubygemsApi) }
-  let(:checker) { described_class.new(config: config, api: api) }
+  let(:lockfile_parser) { instance_double(BundleSafeUpdate::LockfileParser) }
+  let(:checker) { described_class.new(config: config, api: api, lockfile_parser: lockfile_parser) }
 
   let(:gem_info) do
     BundleSafeUpdate::OutdatedChecker::OutdatedGem.new(
@@ -19,6 +21,11 @@ RSpec.describe BundleSafeUpdate::GemChecker do
       current_version: '1.16.2',
       newest_version: '1.16.4'
     )
+  end
+
+  before do
+    allow(lockfile_parser).to receive(:source_for).and_return('https://rubygems.org/')
+    allow(config).to receive(:trusted_source?).and_return(false)
   end
 
   describe '#check_gem' do
@@ -61,6 +68,26 @@ RSpec.describe BundleSafeUpdate::GemChecker do
         result = checker.check_gem(gem_info)
         expect(result.allowed).to be(true)
         expect(result.reason).to eq('ignored')
+      end
+    end
+
+    context 'when gem is from trusted source' do
+      before do
+        allow(config).to receive(:ignored?).with('nokogiri').and_return(false)
+        allow(lockfile_parser).to receive(:source_for)
+          .with('nokogiri')
+          .and_return('https://ruby.cloudsmith.io/readcube/main/')
+        allow(config).to receive(:trusted_source?)
+          .with('https://ruby.cloudsmith.io/readcube/main/')
+          .and_return(true)
+      end
+
+      it 'returns allowed result without API call' do
+        expect(api).not_to receive(:version_age_days)
+
+        result = checker.check_gem(gem_info)
+        expect(result.allowed).to be(true)
+        expect(result.reason).to eq('trusted source')
       end
     end
 

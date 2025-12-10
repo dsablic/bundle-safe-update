@@ -11,16 +11,18 @@ module BundleSafeUpdate
       'cooldown_days' => DEFAULT_COOLDOWN_DAYS,
       'ignore_prefixes' => [],
       'ignore_gems' => [],
+      'trusted_sources' => [],
       'verbose' => false
     }.freeze
 
-    attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :verbose
+    attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :verbose
 
     def initialize(options = {})
       config = merge_configs(options)
       @cooldown_days = config['cooldown_days']
       @ignore_prefixes = config['ignore_prefixes']
       @ignore_gems = config['ignore_gems']
+      @trusted_sources = config['trusted_sources']
       @verbose = config['verbose']
     end
 
@@ -28,6 +30,12 @@ module BundleSafeUpdate
       return true if @ignore_gems.include?(gem_name)
 
       @ignore_prefixes.any? { |prefix| gem_name.start_with?(prefix) }
+    end
+
+    def trusted_source?(source_url)
+      return false if source_url.nil? || @trusted_sources.empty?
+
+      @trusted_sources.any? { |pattern| source_url.include?(pattern) }
     end
 
     private

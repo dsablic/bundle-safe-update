@@ -1,0 +1,42 @@
+#!/bin/bash
+# Install git hooks for bundle-safe-update development
+
+set -e
+
+HOOKS_DIR=".git/hooks"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+if [ ! -d "$PROJECT_DIR/.git" ]; then
+  echo "Error: Not a git repository"
+  exit 1
+fi
+
+# Create post-commit hook
+cat > "$HOOKS_DIR/post-commit" << 'EOF'
+#!/bin/bash
+# Auto-tag when version.rb changes
+
+VERSION_FILE="lib/bundle_safe_update/version.rb"
+
+# Check if version.rb was in the commit
+if git diff-tree --no-commit-id --name-only -r HEAD | grep -q "$VERSION_FILE"; then
+  VERSION=$(grep -o "VERSION = '[^']*'" "$VERSION_FILE" | cut -d"'" -f2)
+  TAG="v$VERSION"
+
+  if [ -z "$VERSION" ]; then
+    echo "Warning: Could not extract version from $VERSION_FILE"
+    exit 0
+  fi
+
+  if ! git tag | grep -q "^$TAG$"; then
+    git tag "$TAG"
+    git push origin "$TAG"
+    echo "Tagged and pushed $TAG"
+  fi
+fi
+EOF
+
+chmod +x "$HOOKS_DIR/post-commit"
+
+echo "Installed post-commit hook"

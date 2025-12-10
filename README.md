@@ -77,8 +77,26 @@ ignore_prefixes:
   - mycompany-
   - internal-
 
+# Trust gems from specific sources (skip cooldown check)
+# Useful for private gem servers where gems are already vetted
+trusted_sources:
+  - ruby.cloudsmith.io
+  - gems.mycompany.com
+
 # Enable verbose output
 verbose: false
+```
+
+### Trusted Sources
+
+Gems from trusted sources skip the cooldown check entirely. The source is determined by parsing `Gemfile.lock`. This is useful for:
+
+- Private gem servers (Cloudsmith, Gemfury, self-hosted)
+- Internal gems that are already vetted by your organization
+
+Example output for trusted gems:
+```
+OK: mycompany-auth (1.2.0) - trusted source
 ```
 
 ### Config Resolution Order

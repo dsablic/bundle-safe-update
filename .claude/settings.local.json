@@ -11,7 +11,9 @@
       "Bash(bundle exec rspec:*)",
       "Bash(bundle exec rubocop:*)",
       "Bash(./exe/bundle-safe-update:*)",
-      "Bash(bundle exec:*)"
+      "Bash(bundle exec:*)",
+      "Bash(./bin/install-hooks:*)",
+      "Bash(cat:*)"
     ]
   }
 }

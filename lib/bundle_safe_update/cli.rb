@@ -69,6 +69,7 @@ module BundleSafeUpdate
       puts("  Cooldown days: #{config.cooldown_days}")
       puts("  Ignored gems: #{format_list(config.ignore_gems)}")
       puts("  Ignored prefixes: #{format_list(config.ignore_prefixes)}")
+      puts("  Trusted sources: #{format_list(config.trusted_sources)}")
       puts("  Verbose: #{config.verbose}")
       EXIT_SUCCESS
     end

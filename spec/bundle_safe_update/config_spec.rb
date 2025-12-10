@@ -145,6 +145,41 @@ RSpec.describe BundleSafeUpdate::Config do
     end
   end
 
+  describe '#trusted_source?' do
+    before do
+      allow(File).to receive(:exist?).with(local_config_path).and_return(true)
+      allow(YAML).to receive(:safe_load_file).with(local_config_path).and_return({
+                                                                                   'trusted_sources' => %w[
+                                                                                     ruby.cloudsmith.io
+                                                                                     gems.mycompany.com
+                                                                                   ]
+                                                                                 })
+    end
+
+    let(:config) { described_class.new }
+
+    it 'returns true for URLs matching trusted sources' do
+      expect(config.trusted_source?('https://ruby.cloudsmith.io/readcube/main/')).to be(true)
+      expect(config.trusted_source?('https://gems.mycompany.com/private/')).to be(true)
+    end
+
+    it 'returns false for URLs not matching trusted sources' do
+      expect(config.trusted_source?('https://rubygems.org/')).to be(false)
+      expect(config.trusted_source?('https://other-source.com/')).to be(false)
+    end
+
+    it 'returns false for nil source URL' do
+      expect(config.trusted_source?(nil)).to be(false)
+    end
+  end
+
+  describe '#trusted_source? with empty trusted_sources' do
+    it 'returns false when no trusted sources configured' do
+      config = described_class.new
+      expect(config.trusted_source?('https://ruby.cloudsmith.io/readcube/main/')).to be(false)
+    end
+  end
+
   describe 'invalid YAML handling' do
     before do
       allow(File).to receive(:exist?).with(local_config_path).and_return(true)
