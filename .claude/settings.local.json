@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(readcube-ai-skills:ruby)",
+      "Skill(readcube-ai-skills:testing)",
+      "Skill(readcube-ai-skills:documentation)",
+      "Skill(superpowers:brainstorming)",
+      "Bash(bundle gem:*)",
+      "Bash(chmod:*)",
+      "Bash(bundle install:*)",
+      "Bash(bundle exec rspec:*)",
+      "Bash(bundle exec rubocop:*)",
+      "Bash(./exe/bundle-safe-update:*)",
+      "Bash(bundle exec:*)"
+    ]
+  }
+}
