@@ -2,9 +2,13 @@
 
 require 'optparse'
 require 'json'
+require_relative 'cli/output'
 
 module BundleSafeUpdate
   class CLI
+    include ColorOutput
+    include Output
+
     EXIT_SUCCESS = 0
     EXIT_VIOLATIONS = 1
     EXIT_ERROR = 2
@@ -19,7 +23,7 @@ module BundleSafeUpdate
       return dry_run(config) if options[:dry_run]
 
       results = check_gems(config, options[:verbose])
-      output_results(results, config, options)
+      process_results(results, config, options)
     rescue StandardError => e
       handle_error(e, options[:verbose])
       EXIT_ERROR
@@ -45,6 +49,7 @@ module BundleSafeUpdate
     def define_config_options(opts, options)
       opts.on('--config PATH', 'Path to config file') { |path| options[:config] = path }
       opts.on('--cooldown DAYS', Integer, 'Minimum age in days') { |days| options[:cooldown] = days }
+      opts.on('--update', 'Update gems that pass the cooldown check') { options[:update] = true }
       opts.on('--dry-run', 'Show configuration without checking') { options[:dry_run] = true }
     end
 
@@ -65,87 +70,64 @@ module BundleSafeUpdate
     end
 
     def dry_run(config)
-      puts('Configuration (dry-run):')
-      puts("  Cooldown days: #{config.cooldown_days}")
-      puts("  Ignored gems: #{format_list(config.ignore_gems)}")
-      puts("  Ignored prefixes: #{format_list(config.ignore_prefixes)}")
-      puts("  Trusted sources: #{format_list(config.trusted_sources)}")
-      puts("  Verbose: #{config.verbose}")
+      dry_run_output(config)
       EXIT_SUCCESS
     end
 
-    def format_list(items)
-      items.empty? ? '(none)' : items.join(', ')
-    end
-
     def check_gems(config, verbose)
-      puts('Checking gem versions...') if verbose
+      puts(cyan('Checking gem versions...')) if verbose
       outdated_gems = OutdatedChecker
                       .new
                       .outdated_gems
       return log_empty_result(verbose) if outdated_gems.empty?
 
-      puts("Found #{outdated_gems.length} outdated gem(s)") if verbose
+      puts(cyan("Found #{outdated_gems.length} outdated gem(s)")) if verbose
       GemChecker
         .new(config: config)
         .check_all(outdated_gems)
     end
 
     def log_empty_result(verbose)
-      puts('No outdated gems found.') if verbose
+      puts(green('No outdated gems found.')) if verbose
       []
     end
 
-    def output_results(results, config, options)
+    def process_results(results, config, options)
+      allowed = results.select(&:allowed)
       blocked = results.reject(&:allowed)
+
       options[:json] ? output_json(results, blocked, config) : output_human(results, blocked, config)
+      perform_update(allowed, blocked) if config.update && allowed.any?
+
       blocked.empty? ? EXIT_SUCCESS : EXIT_VIOLATIONS
     end
 
-    def output_json(results, blocked, config)
-      puts(JSON.pretty_generate(build_json_output(results, blocked, config)))
+    def perform_update(allowed, blocked)
+      gem_names = allowed.map(&:name)
+      print_update_start(gem_names)
+      run_bundle_update(gem_names)
+      print_skipped(blocked) if blocked.any?
     end
 
-    def build_json_output(results, blocked, config)
-      {
-        ok: blocked.empty?,
-        cooldown_days: config.cooldown_days,
-        checked: results.length,
-        blocked: blocked.map { |r| { name: r.name, version: r.version, age_days: r.age_days } }
-      }
-    end
-
-    def output_human(results, blocked, config)
-      results.each { |result| print_result(result, config) }
-      print_summary(blocked)
-    end
-
-    def print_result(result, config)
-      if result.allowed
-        puts("OK: #{result.name} (#{result.version}) - #{result.reason}")
-      else
-        puts("BLOCKED: #{result.name} (#{result.version}) - #{blocked_reason(result, config)}")
-      end
-    end
-
-    def blocked_reason(result, config)
-      age_info = result.age_days ? "published #{result.age_days} days ago" : result.reason
-      "#{age_info} (< #{config.cooldown_days} required)"
-    end
-
-    def print_summary(blocked)
+    def print_update_start(gem_names)
       puts
-      message =
-        if blocked.empty?
-          'All gem versions satisfy minimum age requirements.'
-        else
-          "#{blocked.length} gem(s) violate minimum release age"
-        end
-      puts(message)
+      puts(cyan("Updating #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
+      puts(cyan("Running: bundle update #{gem_names.join(' ')}"))
+    end
+
+    def run_bundle_update(gem_names)
+      success = system('bundle', 'update', *gem_names)
+      puts(success ? green('Bundle updated successfully.') : red('Bundle update failed.'))
+    end
+
+    def print_skipped(blocked)
+      names = blocked.map(&:name).join(', ')
+      puts
+      puts(yellow("Skipped #{blocked.length} blocked gem(s): #{names}"))
     end
 
     def handle_error(error, verbose)
-      warn("Error: #{error.message}")
+      warn(red("Error: #{error.message}"))
       warn(error.backtrace.join("\n")) if verbose
     end
   end

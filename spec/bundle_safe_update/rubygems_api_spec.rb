@@ -70,6 +70,41 @@ RSpec.describe BundleSafeUpdate::RubygemsApi do
     end
   end
 
+  describe '#fetch_owners' do
+    let(:owners_response) do
+      [
+        { 'handle' => 'alexrothenberg', 'email' => 'alex@example.com' },
+        { 'handle' => 'aws', 'email' => 'aws@example.com' }
+      ].to_json
+    end
+
+    before do
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/aws-sdk-core/owners.json')
+        .to_return(status: 200, body: owners_response)
+    end
+
+    it 'fetches owner handles from RubyGems API' do
+      owners = api.fetch_owners('aws-sdk-core')
+      expect(owners).to eq(%w[alexrothenberg aws])
+    end
+
+    it 'returns empty array on HTTP failure' do
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/unknown-gem/owners.json')
+        .to_return(status: 404, body: 'Not Found')
+
+      owners = api.fetch_owners('unknown-gem')
+      expect(owners).to eq([])
+    end
+
+    it 'returns empty array on invalid JSON' do
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/bad-json/owners.json')
+        .to_return(status: 200, body: 'not valid json')
+
+      owners = api.fetch_owners('bad-json')
+      expect(owners).to eq([])
+    end
+  end
+
   describe 'error handling' do
     it 'raises ApiError on HTTP failure' do
       stub_request(:get, 'https://rubygems.org/api/v1/versions/bad-gem.json')

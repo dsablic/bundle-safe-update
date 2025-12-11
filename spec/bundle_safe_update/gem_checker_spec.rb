@@ -7,7 +7,8 @@ RSpec.describe BundleSafeUpdate::GemChecker do
       cooldown_days: 14,
       ignore_gems: [],
       ignore_prefixes: [],
-      trusted_sources: []
+      trusted_sources: [],
+      trusted_owners: []
     )
   end
 
@@ -88,6 +89,33 @@ RSpec.describe BundleSafeUpdate::GemChecker do
         result = checker.check_gem(gem_info)
         expect(result.allowed).to be(true)
         expect(result.reason).to eq('trusted source')
+      end
+    end
+
+    context 'when gem is from trusted owner' do
+      let(:config) do
+        instance_double(
+          BundleSafeUpdate::Config,
+          cooldown_days: 14,
+          ignore_gems: [],
+          ignore_prefixes: [],
+          trusted_sources: [],
+          trusted_owners: %w[alexrothenberg]
+        )
+      end
+
+      before do
+        allow(config).to receive(:ignored?).with('nokogiri').and_return(false)
+        allow(config).to receive(:trusted_source?).and_return(false)
+        allow(api).to receive(:fetch_owners).with('nokogiri').and_return(%w[alexrothenberg flavorjones])
+      end
+
+      it 'returns allowed result without age check' do
+        expect(api).not_to receive(:version_age_days)
+
+        result = checker.check_gem(gem_info)
+        expect(result.allowed).to be(true)
+        expect(result.reason).to eq('trusted owner')
       end
     end
 

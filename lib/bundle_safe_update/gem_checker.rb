@@ -13,6 +13,7 @@ module BundleSafeUpdate
     def check_gem(gem_info)
       return ignored_result(gem_info) if @config.ignored?(gem_info.name)
       return trusted_source_result(gem_info) if trusted_source?(gem_info.name)
+      return trusted_owner_result(gem_info) if trusted_owner?(gem_info.name)
 
       age_days = @api.version_age_days(gem_info.name, gem_info.newest_version)
       return not_found_result(gem_info) if age_days.nil?
@@ -31,12 +32,23 @@ module BundleSafeUpdate
       @config.trusted_source?(source_url)
     end
 
+    def trusted_owner?(gem_name)
+      return false if @config.trusted_owners.empty?
+
+      owners = @api.fetch_owners(gem_name)
+      @config.trusted_owners.intersect?(owners)
+    end
+
     def ignored_result(gem_info)
       build_result(gem_info, age_days: nil, allowed: true, reason: 'ignored')
     end
 
     def trusted_source_result(gem_info)
       build_result(gem_info, age_days: nil, allowed: true, reason: 'trusted source')
+    end
+
+    def trusted_owner_result(gem_info)
+      build_result(gem_info, age_days: nil, allowed: true, reason: 'trusted owner')
     end
 
     def not_found_result(gem_info)

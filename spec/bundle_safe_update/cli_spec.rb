@@ -142,7 +142,7 @@ RSpec.describe BundleSafeUpdate::CLI do
 
       it 'outputs configuration' do
         expect { cli.run(['--dry-run']) }
-          .to output(/Cooldown days: 14/).to_stdout
+          .to output(/Cooldown days: 14.*Update: false/m).to_stdout
       end
     end
 
@@ -170,6 +170,120 @@ RSpec.describe BundleSafeUpdate::CLI do
       it 'outputs error message' do
         expect { cli.run([]) }
           .to output(/Error: Something went wrong/).to_stderr
+      end
+    end
+
+    context 'with --update flag' do
+      let(:allowed_gem) do
+        BundleSafeUpdate::OutdatedChecker::OutdatedGem.new(
+          name: 'rails',
+          current_version: '7.0.8',
+          newest_version: '7.1.3.2'
+        )
+      end
+
+      let(:blocked_gem) do
+        BundleSafeUpdate::OutdatedChecker::OutdatedGem.new(
+          name: 'nokogiri',
+          current_version: '1.16.2',
+          newest_version: '1.16.4'
+        )
+      end
+
+      let(:allowed_result) do
+        BundleSafeUpdate::GemChecker::CheckResult.new(
+          name: 'rails',
+          version: '7.1.3.2',
+          age_days: 42,
+          allowed: true,
+          reason: 'satisfies minimum age'
+        )
+      end
+
+      let(:blocked_result) do
+        BundleSafeUpdate::GemChecker::CheckResult.new(
+          name: 'nokogiri',
+          version: '1.16.4',
+          age_days: 3,
+          allowed: false,
+          reason: 'too new'
+        )
+      end
+
+      context 'when there are allowed gems' do
+        before do
+          allow(outdated_checker).to receive(:outdated_gems).and_return([allowed_gem])
+          allow(gem_checker).to receive(:check_all).and_return([allowed_result])
+        end
+
+        it 'runs bundle update for allowed gems' do
+          expect(cli).to receive(:system)
+            .with('bundle', 'update', 'rails')
+            .and_return(true)
+          cli.run(['--update'])
+        end
+
+        it 'outputs success message when update succeeds' do
+          allow(cli).to receive(:system).and_return(true)
+          expect { cli.run(['--update']) }
+            .to output(/Bundle updated successfully/).to_stdout
+        end
+
+        it 'outputs failure message when update fails' do
+          allow(cli).to receive(:system).and_return(false)
+          expect { cli.run(['--update']) }
+            .to output(/Bundle update failed/).to_stdout
+        end
+      end
+
+      context 'when there are mixed allowed and blocked gems' do
+        before do
+          allow(outdated_checker).to receive(:outdated_gems)
+            .and_return([allowed_gem, blocked_gem])
+          allow(gem_checker).to receive(:check_all)
+            .and_return([allowed_result, blocked_result])
+        end
+
+        it 'runs bundle update only for allowed gems' do
+          expect(cli).to receive(:system)
+            .with('bundle', 'update', 'rails')
+            .and_return(true)
+          cli.run(['--update'])
+        end
+
+        it 'outputs skipped gems message' do
+          allow(cli).to receive(:system).and_return(true)
+          expect { cli.run(['--update']) }
+            .to output(/Skipped 1 blocked gem\(s\): nokogiri/).to_stdout
+        end
+
+        it 'returns violations exit code even after update' do
+          allow(cli).to receive(:system).and_return(true)
+          expect(cli.run(['--update'])).to eq(1)
+        end
+      end
+
+      context 'when all gems are blocked' do
+        before do
+          allow(outdated_checker).to receive(:outdated_gems).and_return([blocked_gem])
+          allow(gem_checker).to receive(:check_all).and_return([blocked_result])
+        end
+
+        it 'does not run bundle update' do
+          expect(cli).not_to receive(:system)
+          cli.run(['--update'])
+        end
+      end
+
+      context 'when no outdated gems' do
+        before do
+          allow(outdated_checker).to receive(:outdated_gems).and_return([])
+        end
+
+        it 'does not run bundle update' do
+          expect(cli).not_to receive(:system)
+          cli.run(['--update'])
+        end
       end
     end
   end

@@ -2,6 +2,7 @@
 
 require_relative 'bundle_safe_update/version'
 require_relative 'bundle_safe_update/config'
+require_relative 'bundle_safe_update/color_output'
 require_relative 'bundle_safe_update/rubygems_api'
 require_relative 'bundle_safe_update/lockfile_parser'
 require_relative 'bundle_safe_update/outdated_checker'

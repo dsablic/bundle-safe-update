@@ -28,6 +28,7 @@ bundle-safe-update
 |--------|-------------|
 | `--config PATH` | Path to config file |
 | `--cooldown DAYS` | Minimum age in days (overrides config) |
+| `--update` | Update gems that pass the cooldown check |
 | `--json` | Output in JSON format for CI systems |
 | `--verbose` | Enable verbose output |
 | `--dry-run` | Show configuration without checking |
@@ -59,6 +60,31 @@ JSON output (`--json`):
 }
 ```
 
+### Updating Safe Gems
+
+By default, `bundle-safe-update` only checks gems and reports results. Use `--update` to automatically update gems that pass the cooldown check:
+
+```sh
+bundle-safe-update --update
+```
+
+Example output:
+
+```
+OK: rails (7.1.3.2) - satisfies minimum age
+BLOCKED: nokogiri (1.16.4) - published 3 days ago (< 14 required)
+
+1 gem(s) violate minimum release age
+
+Updating 1 gem(s): rails
+Running: bundle update rails
+Bundle updated successfully.
+
+Skipped 1 blocked gem(s): nokogiri
+```
+
+This allows you to safely update gems while respecting the cooldown period for newly released versions.
+
 ## Configuration
 
 Create `.bundle-safe-update.yml` in your project root or home directory:
@@ -83,6 +109,14 @@ trusted_sources:
   - ruby.cloudsmith.io
   - gems.mycompany.com
 
+# Trust gems by RubyGems owner/publisher (skip cooldown check)
+# Useful for well-known publishers like AWS, Google, etc.
+trusted_owners:
+  - awscloud  # AWS SDK gems
+
+# Automatically update gems that pass the cooldown check (default: false)
+update: false
+
 # Enable verbose output
 verbose: false
 ```
@@ -97,6 +131,23 @@ Gems from trusted sources skip the cooldown check entirely. The source is determ
 Example output for trusted gems:
 ```
 OK: mycompany-auth (1.2.0) - trusted source
+```
+
+### Trusted Owners
+
+Gems owned by trusted RubyGems users skip the cooldown check. The owner is fetched from the RubyGems API. This is useful for:
+
+- Well-known publishers (AWS, Google, Rails core team, etc.)
+- Organizations with strong security practices
+
+Example output for trusted owner gems:
+```
+OK: aws-sdk-s3 (1.180.0) - trusted owner
+```
+
+To find a gem's owner, visit `https://rubygems.org/gems/{gem_name}` and look at the "Owners" section, or use:
+```sh
+curl https://rubygems.org/api/v1/gems/{gem_name}/owners.json
 ```
 
 ### Config Resolution Order

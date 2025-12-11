@@ -1,24 +1,27 @@
 # frozen_string_literal: true
 
+require 'open3'
+
 module BundleSafeUpdate
   class OutdatedChecker
     OutdatedGem = Struct.new(:name, :current_version, :newest_version, keyword_init: true)
 
-    class BundlerError < StandardError; end
+    BUNDLE_COMMAND = %w[bundle outdated --parseable].freeze
 
     def initialize(executor: nil)
       @executor = executor || method(:execute_command)
     end
 
     def outdated_gems
-      output = @executor.call('bundle outdated --parseable')
+      output = @executor.call(BUNDLE_COMMAND)
       parse_output(output)
     end
 
     private
 
     def execute_command(command)
-      `#{command} 2>&1`
+      stdout, _stderr, _status = Open3.capture3(*command)
+      stdout
     end
 
     def parse_output(output)

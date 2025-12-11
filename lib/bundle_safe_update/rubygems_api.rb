@@ -6,7 +6,11 @@ require 'time'
 
 module BundleSafeUpdate
   class RubygemsApi
-    API_BASE = 'https://rubygems.org/api/v1/versions'
+    VERSIONS_API_BASE = 'https://rubygems.org/api/v1/versions'
+    OWNERS_API_BASE = 'https://rubygems.org/api/v1/gems'
+    SECONDS_PER_DAY = 86_400
+    HTTP_OPEN_TIMEOUT = 10
+    HTTP_READ_TIMEOUT = 30
 
     class ApiError < StandardError; end
 
@@ -20,7 +24,7 @@ module BundleSafeUpdate
     end
 
     def fetch_versions(gem_name)
-      uri = URI("#{API_BASE}/#{gem_name}.json")
+      uri = URI("#{VERSIONS_API_BASE}/#{gem_name}.json")
       response = perform_request(uri)
 
       unless response.is_a?(Net::HTTPSuccess)
@@ -37,7 +41,20 @@ module BundleSafeUpdate
       return nil unless info
 
       created_at = Time.parse(info['created_at'])
-      ((Time.now - created_at) / 86_400).to_i
+      ((Time.now - created_at) / SECONDS_PER_DAY).to_i
+    end
+
+    def fetch_owners(gem_name)
+      uri = URI("#{OWNERS_API_BASE}/#{gem_name}/owners.json")
+      response = perform_request(uri)
+
+      return [] unless response.is_a?(Net::HTTPSuccess)
+
+      JSON
+        .parse(response.body)
+        .map { |owner| owner['handle'] }
+    rescue JSON::ParserError
+      []
     end
 
     private
@@ -45,7 +62,11 @@ module BundleSafeUpdate
     def perform_request(uri)
       return @http_client.call(uri) if @http_client
 
-      Net::HTTP.get_response(uri)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.open_timeout = HTTP_OPEN_TIMEOUT
+      http.read_timeout = HTTP_READ_TIMEOUT
+      http.get(uri.request_uri)
     end
   end
 end

@@ -13,7 +13,8 @@
       "Bash(./exe/bundle-safe-update:*)",
       "Bash(bundle exec:*)",
       "Bash(./bin/install-hooks:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(curl:*)"
     ]
   }
 }

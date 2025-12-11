@@ -30,6 +30,16 @@ RSpec.describe BundleSafeUpdate::Config do
       config = described_class.new
       expect(config.verbose).to be(false)
     end
+
+    it 'uses update false by default' do
+      config = described_class.new
+      expect(config.update).to be(false)
+    end
+
+    it 'uses empty trusted_owners by default' do
+      config = described_class.new
+      expect(config.trusted_owners).to eq([])
+    end
   end
 
   describe 'global config' do
@@ -37,7 +47,8 @@ RSpec.describe BundleSafeUpdate::Config do
       allow(File).to receive(:exist?).with(home_config_path).and_return(true)
       allow(YAML).to receive(:safe_load_file).with(home_config_path).and_return({
                                                                                   'cooldown_days' => 21,
-                                                                                  'ignore_gems' => %w[rails]
+                                                                                  'ignore_gems' => %w[rails],
+                                                                                  'update' => true
                                                                                 })
     end
 
@@ -49,6 +60,11 @@ RSpec.describe BundleSafeUpdate::Config do
     it 'loads ignore_gems from global config' do
       config = described_class.new
       expect(config.ignore_gems).to eq(%w[rails])
+    end
+
+    it 'loads update from global config' do
+      config = described_class.new
+      expect(config.update).to be(true)
     end
   end
 
@@ -98,6 +114,11 @@ RSpec.describe BundleSafeUpdate::Config do
     it 'CLI verbose overrides config file' do
       config = described_class.new(verbose: true)
       expect(config.verbose).to be(true)
+    end
+
+    it 'CLI update overrides config file' do
+      config = described_class.new(update: true)
+      expect(config.update).to be(true)
     end
   end
 

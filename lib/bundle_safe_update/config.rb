@@ -12,10 +12,13 @@ module BundleSafeUpdate
       'ignore_prefixes' => [],
       'ignore_gems' => [],
       'trusted_sources' => [],
-      'verbose' => false
+      'trusted_owners' => [],
+      'verbose' => false,
+      'update' => false
     }.freeze
 
-    attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :verbose
+    attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :trusted_owners,
+                :verbose, :update
 
     def initialize(options = {})
       config = merge_configs(options)
@@ -23,7 +26,9 @@ module BundleSafeUpdate
       @ignore_prefixes = config['ignore_prefixes']
       @ignore_gems = config['ignore_gems']
       @trusted_sources = config['trusted_sources']
+      @trusted_owners = config['trusted_owners']
       @verbose = config['verbose']
+      @update = config['update']
     end
 
     def ignored?(gem_name)
@@ -76,6 +81,7 @@ module BundleSafeUpdate
     def apply_cli_overrides(config, options)
       config['cooldown_days'] = options[:cooldown] if options[:cooldown]
       config['verbose'] = options[:verbose] if options.key?(:verbose)
+      config['update'] = options[:update] if options.key?(:update)
       config
     end
 
