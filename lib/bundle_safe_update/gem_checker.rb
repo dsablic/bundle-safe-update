@@ -4,10 +4,13 @@ module BundleSafeUpdate
   class GemChecker
     CheckResult = Struct.new(:name, :version, :age_days, :allowed, :reason, keyword_init: true)
 
-    def initialize(config:, api: nil, lockfile_parser: nil)
+    DEFAULT_MAX_THREADS = 8
+
+    def initialize(config:, api: nil, lockfile_parser: nil, max_threads: nil)
       @config = config
       @api = api || RubygemsApi.new
       @lockfile_parser = lockfile_parser || LockfileParser.new
+      @max_threads = max_threads || DEFAULT_MAX_THREADS
     end
 
     def check_gem(gem_info)
@@ -22,10 +25,41 @@ module BundleSafeUpdate
     end
 
     def check_all(outdated_gems)
-      outdated_gems.map { |gem_info| check_gem(gem_info) }
+      return [] if outdated_gems.empty?
+
+      check_all_parallel(outdated_gems)
     end
 
     private
+
+    def check_all_parallel(outdated_gems)
+      results = Array.new(outdated_gems.size)
+      queue = Queue.new
+      outdated_gems.each_with_index { |gem_info, idx| queue << [gem_info, idx] }
+
+      threads = spawn_worker_threads(queue, results)
+      threads.each(&:join)
+
+      results
+    end
+
+    def spawn_worker_threads(queue, results)
+      thread_count = [@max_threads, queue.size].min
+      Array.new(thread_count) do
+        Thread.new do
+          process_queue(queue, results)
+        end
+      end
+    end
+
+    def process_queue(queue, results)
+      loop do
+        gem_info, idx = queue.pop(true)
+        results[idx] = check_gem(gem_info)
+      rescue ThreadError
+        break
+      end
+    end
 
     def trusted_source?(gem_name)
       source_url = @lockfile_parser.source_for(gem_name)

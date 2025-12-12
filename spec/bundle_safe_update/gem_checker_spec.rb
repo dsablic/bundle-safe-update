@@ -158,5 +158,16 @@ RSpec.describe BundleSafeUpdate::GemChecker do
       rails_result = results.find { |r| r.name == 'rails' }
       expect(rails_result.allowed).to be(true)
     end
+
+    it 'preserves order when processing in parallel' do
+      results = checker.check_all([gem_info, gem_info2])
+      expect(results[0].name).to eq('nokogiri')
+      expect(results[1].name).to eq('rails')
+    end
+
+    it 'returns empty array for empty input' do
+      results = checker.check_all([])
+      expect(results).to eq([])
+    end
   end
 end

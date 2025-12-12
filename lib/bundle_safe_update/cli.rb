@@ -83,7 +83,7 @@ module BundleSafeUpdate
 
       puts(cyan("Found #{outdated_gems.length} outdated gem(s)")) if verbose
       GemChecker
-        .new(config: config)
+        .new(config: config, max_threads: config.max_threads)
         .check_all(outdated_gems)
     end
 

@@ -40,6 +40,11 @@ RSpec.describe BundleSafeUpdate::Config do
       config = described_class.new
       expect(config.trusted_owners).to eq([])
     end
+
+    it 'uses max_threads 8 by default' do
+      config = described_class.new
+      expect(config.max_threads).to eq(8)
+    end
   end
 
   describe 'global config' do

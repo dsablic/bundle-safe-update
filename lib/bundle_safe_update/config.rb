@@ -7,18 +7,21 @@ module BundleSafeUpdate
     DEFAULT_COOLDOWN_DAYS = 14
     CONFIG_FILENAME = '.bundle-safe-update.yml'
 
+    DEFAULT_MAX_THREADS = 8
+
     DEFAULTS = {
       'cooldown_days' => DEFAULT_COOLDOWN_DAYS,
       'ignore_prefixes' => [],
       'ignore_gems' => [],
       'trusted_sources' => [],
       'trusted_owners' => [],
+      'max_threads' => DEFAULT_MAX_THREADS,
       'verbose' => false,
       'update' => false
     }.freeze
 
     attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :trusted_owners,
-                :verbose, :update
+                :max_threads, :verbose, :update
 
     def initialize(options = {})
       config = merge_configs(options)
@@ -27,6 +30,7 @@ module BundleSafeUpdate
       @ignore_gems = config['ignore_gems']
       @trusted_sources = config['trusted_sources']
       @trusted_owners = config['trusted_owners']
+      @max_threads = config['max_threads']
       @verbose = config['verbose']
       @update = config['update']
     end

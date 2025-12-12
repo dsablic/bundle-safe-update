@@ -15,6 +15,7 @@ module BundleSafeUpdate
           "  Ignored prefixes: #{format_list(config.ignore_prefixes)}",
           "  Trusted sources: #{format_list(config.trusted_sources)}",
           "  Trusted owners: #{format_list(config.trusted_owners)}",
+          "  Max threads: #{config.max_threads}",
           "  Update: #{config.update}",
           "  Verbose: #{config.verbose}"
         ]
