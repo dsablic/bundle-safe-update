@@ -8,11 +8,14 @@ module BundleSafeUpdate
   class RubygemsApi
     VERSIONS_API_BASE = 'https://rubygems.org/api/v1/versions'
     OWNERS_API_BASE = 'https://rubygems.org/api/v1/gems'
+    GEM_API_BASE = 'https://rubygems.org/api/v1/gems'
     SECONDS_PER_DAY = 86_400
     HTTP_OPEN_TIMEOUT = 10
     HTTP_READ_TIMEOUT = 30
 
     class ApiError < StandardError; end
+
+    GemInfo = Struct.new(:downloads, :version_created_at, keyword_init: true)
 
     def initialize(http_client: nil)
       @http_client = http_client
@@ -57,7 +60,30 @@ module BundleSafeUpdate
       []
     end
 
+    def fetch_gem_info(gem_name)
+      uri = URI("#{GEM_API_BASE}/#{gem_name}.json")
+      response = perform_request(uri)
+
+      return nil unless response.is_a?(Net::HTTPSuccess)
+
+      data = JSON.parse(response.body)
+      GemInfo.new(
+        downloads: data['downloads'],
+        version_created_at: parse_time(data['version_created_at'])
+      )
+    rescue JSON::ParserError
+      nil
+    end
+
     private
+
+    def parse_time(time_string)
+      return nil unless time_string
+
+      Time.parse(time_string)
+    rescue ArgumentError
+      nil
+    end
 
     def perform_request(uri)
       return @http_client.call(uri) if @http_client

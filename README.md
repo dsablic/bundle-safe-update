@@ -30,6 +30,8 @@ bundle-safe-update
 | `--cooldown DAYS` | Minimum age in days (overrides config) |
 | `--update` | Update gems that pass the cooldown check |
 | `--no-audit` | Skip vulnerability audit |
+| `--no-risk` | Skip risk signal checking |
+| `--refresh-cache` | Refresh owner cache without warnings |
 | `--json` | Output in JSON format for CI systems |
 | `--verbose` | Enable verbose output |
 | `--dry-run` | Show configuration without checking |
@@ -110,6 +112,55 @@ VULNERABLE: actionpack (CVE-2024-1234) - Possible XSS vulnerability
 
 To skip the audit check, use `--no-audit` or set `audit: false` in config.
 
+### Risk Intelligence
+
+Bundle-safe-update analyzes gems for risk signals that may indicate supply chain threats:
+
+| Signal | Description | Default Threshold |
+|--------|-------------|-------------------|
+| Low downloads | Gems with very few total downloads | < 1,000 |
+| Stale gem | Gems not updated recently | > 3 years |
+| New owner | Gems with recent ownership changes | Ownership changed since last run |
+| Version jump | Major version bumps | Any major bump |
+
+Example output with risk warnings:
+
+```
+OK: rails (7.1.3.2) - satisfies minimum age
+
+Risk signals:
+WARNING: tiny-lib (2.0.0) - low downloads (847 total)
+WARNING: old-parser (1.5.0) - stale gem (last release 4.2 years ago)
+BLOCKED: some-gem (5.0.0) - major version jump (was 2.3.1)
+
+1 gem(s) blocked by risk signals
+2 risk warning(s)
+```
+
+Each signal can be set to `warn` (default), `block`, or `off`:
+
+```yaml
+risk_signals:
+  low_downloads:
+    mode: warn           # off | warn | block
+    threshold: 1000      # minimum total downloads
+
+  stale_gem:
+    mode: warn
+    threshold_years: 3   # years since last release
+
+  new_owner:
+    mode: block          # block on ownership changes
+    threshold_days: 90   # (reserved for future use)
+
+  version_jump:
+    mode: warn
+```
+
+Owner changes are detected by caching gem owners locally (`.bundle/bundle-safe-update-cache.yml`). On first run, no warnings are generated - owners are just cached. Subsequent runs detect changes.
+
+Use `--refresh-cache` to rebuild the cache without triggering warnings (useful after intentional ownership changes). Use `--no-risk` to skip risk checking entirely.
+
 ## Configuration
 
 Create `.bundle-safe-update.yml` in your project root or home directory:
@@ -189,8 +240,8 @@ curl https://rubygems.org/api/v1/gems/{gem_name}/owners.json
 
 | Code | Meaning |
 |------|---------|
-| 0 | All gem versions satisfy minimum age |
-| 1 | One or more gems are too new |
+| 0 | All checks passed |
+| 1 | Blocked by cooldown, risk signals, or vulnerabilities |
 | 2 | Unexpected error |
 
 ## CI Integration

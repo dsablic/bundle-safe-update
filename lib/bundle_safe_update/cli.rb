@@ -51,6 +51,8 @@ module BundleSafeUpdate
       opts.on('--cooldown DAYS', Integer, 'Minimum age in days') { |days| options[:cooldown] = days }
       opts.on('--update', 'Update gems that pass the cooldown check') { options[:update] = true }
       opts.on('--no-audit', 'Skip vulnerability audit') { options[:audit] = false }
+      opts.on('--no-risk', 'Skip risk signal checking') { options[:risk] = false }
+      opts.on('--refresh-cache', 'Refresh owner cache without warnings') { options[:refresh_cache] = true }
       opts.on('--dry-run', 'Show configuration without checking') { options[:dry_run] = true }
     end
 
@@ -96,8 +98,19 @@ module BundleSafeUpdate
     def process_results(results, config, options)
       allowed, blocked = partition_results(results)
       output_results(results, blocked, config, options)
-      perform_update(allowed, blocked) if config.update && allowed.any?
-      determine_exit_code(blocked, run_audit(config, options))
+      risk_results = run_risk_check(results, config, options)
+      perform_update(allowed, blocked, risk_results) if config.update && allowed.any?
+      determine_exit_code(blocked, risk_results, run_audit(config, options))
+    end
+
+    def run_risk_check(results, config, options)
+      return [] if options[:risk] == false
+
+      risk_checker = RiskChecker.new(config: config)
+      risk_results = options[:refresh_cache] ? [] : risk_checker.check_all(results)
+      output_risk_results(risk_results, options) unless options[:json]
+      risk_checker.save_cache
+      risk_results
     end
 
     def partition_results(results)
@@ -108,8 +121,9 @@ module BundleSafeUpdate
       options[:json] ? output_json(results, blocked, config) : output_human(results, blocked, config)
     end
 
-    def determine_exit_code(blocked, audit_result)
-      has_violations = blocked.any? || audit_result&.vulnerabilities&.any?
+    def determine_exit_code(blocked, risk_results, audit_result)
+      has_risk_blocks = risk_results.any?(&:blocked)
+      has_violations = blocked.any? || has_risk_blocks || audit_result&.vulnerabilities&.any?
       has_violations ? EXIT_VIOLATIONS : EXIT_SUCCESS
     end
 
@@ -121,28 +135,15 @@ module BundleSafeUpdate
       audit_result
     end
 
-    def perform_update(allowed, blocked)
-      gem_names = allowed.map(&:name)
+    def perform_update(allowed, blocked, risk_results)
+      risk_blocked_names = risk_results.select(&:blocked).map(&:gem_name)
+      updatable = allowed.reject { |r| risk_blocked_names.include?(r.name) }
+      return if updatable.empty?
+
+      gem_names = updatable.map(&:name)
       print_update_start(gem_names)
-      run_bundle_update(gem_names)
-      print_skipped(blocked) if blocked.any?
-    end
-
-    def print_update_start(gem_names)
-      puts
-      puts(cyan("Updating #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
-      puts(cyan("Running: bundle update #{gem_names.join(' ')}"))
-    end
-
-    def run_bundle_update(gem_names)
-      success = system('bundle', 'update', *gem_names)
-      puts(success ? green('Bundle updated successfully.') : red('Bundle update failed.'))
-    end
-
-    def print_skipped(blocked)
-      names = blocked.map(&:name).join(', ')
-      puts
-      puts(yellow("Skipped #{blocked.length} blocked gem(s): #{names}"))
+      print_update_result(system('bundle', 'update', *gem_names))
+      print_skipped(blocked, risk_blocked_names)
     end
 
     def handle_error(error, verbose)

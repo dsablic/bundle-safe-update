@@ -105,6 +105,44 @@ RSpec.describe BundleSafeUpdate::RubygemsApi do
     end
   end
 
+  describe '#fetch_gem_info' do
+    let(:gem_response) do
+      {
+        'name' => 'rails',
+        'downloads' => 500_000_000,
+        'version' => '7.1.3.2',
+        'version_created_at' => '2024-02-21T12:00:00Z'
+      }.to_json
+    end
+
+    before do
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/rails.json')
+        .to_return(status: 200, body: gem_response)
+    end
+
+    it 'fetches gem info from RubyGems API' do
+      info = api.fetch_gem_info('rails')
+
+      expect(info).to be_a(described_class::GemInfo)
+      expect(info.downloads).to eq(500_000_000)
+      expect(info.version_created_at).to be_a(Time)
+    end
+
+    it 'returns nil on HTTP failure' do
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/unknown.json')
+        .to_return(status: 404, body: 'Not Found')
+
+      expect(api.fetch_gem_info('unknown')).to be_nil
+    end
+
+    it 'returns nil on invalid JSON' do
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/bad-json.json')
+        .to_return(status: 200, body: 'not valid json')
+
+      expect(api.fetch_gem_info('bad-json')).to be_nil
+    end
+  end
+
   describe 'error handling' do
     it 'raises ApiError on HTTP failure' do
       stub_request(:get, 'https://rubygems.org/api/v1/versions/bad-gem.json')

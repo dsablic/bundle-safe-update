@@ -14,7 +14,8 @@
       "Bash(bundle exec:*)",
       "Bash(./bin/install-hooks:*)",
       "Bash(cat:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(mkdir:*)"
     ]
   }
 }

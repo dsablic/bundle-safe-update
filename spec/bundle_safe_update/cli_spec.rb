@@ -20,10 +20,14 @@ RSpec.describe BundleSafeUpdate::CLI do
   describe '#run' do
     let(:outdated_checker) { instance_double(BundleSafeUpdate::OutdatedChecker) }
     let(:gem_checker) { instance_double(BundleSafeUpdate::GemChecker) }
+    let(:risk_checker) { instance_double(BundleSafeUpdate::RiskChecker) }
 
     before do
       allow(BundleSafeUpdate::OutdatedChecker).to receive(:new).and_return(outdated_checker)
       allow(BundleSafeUpdate::GemChecker).to receive(:new).and_return(gem_checker)
+      allow(BundleSafeUpdate::RiskChecker).to receive(:new).and_return(risk_checker)
+      allow(risk_checker).to receive(:check_all).and_return([])
+      allow(risk_checker).to receive(:save_cache)
 
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?)

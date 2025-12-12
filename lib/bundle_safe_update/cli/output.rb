@@ -96,6 +96,53 @@ module BundleSafeUpdate
         puts(red("VULNERABLE: #{vuln.gem_name} (#{vuln.cve}) - #{vuln.title}"))
         puts("  Solution: #{vuln.solution}") if vuln.solution
       end
+
+      def output_risk_results(risk_results, options)
+        return if risk_results.empty? || options[:json]
+
+        puts
+        puts(cyan('Risk signals:'))
+        risk_results.each { |result| print_risk_result(result) }
+        print_risk_summary(risk_results)
+      end
+
+      def print_risk_result(result)
+        result.signals.each { |signal| print_risk_signal(result, signal) }
+      end
+
+      def print_risk_signal(result, signal)
+        prefix = signal.mode == 'block' ? red('BLOCKED') : yellow('WARNING')
+        puts("#{prefix}: #{result.gem_name} (#{result.version}) - #{signal.message}")
+      end
+
+      def print_risk_summary(risk_results)
+        warnings = risk_results.sum { |r| r.signals.count { |s| s.mode == 'warn' } }
+        blocks = risk_results.count(&:blocked)
+
+        puts
+        puts(yellow("#{blocks} gem(s) blocked by risk signals")) if blocks.positive?
+        puts(yellow("#{warnings} risk warning(s)")) if warnings.positive?
+      end
+
+      def print_update_start(gem_names)
+        puts
+        puts(cyan("Updating #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
+        puts(cyan("Running: bundle update #{gem_names.join(' ')}"))
+      end
+
+      def print_update_result(success)
+        puts(success ? green('Bundle updated successfully.') : red('Bundle update failed.'))
+      end
+
+      def print_skipped(blocked, risk_blocked_names)
+        total_skipped = blocked.length + risk_blocked_names.length
+        return if total_skipped.zero?
+
+        cooldown_names = blocked.map(&:name)
+        all_skipped = (cooldown_names + risk_blocked_names).uniq.join(', ')
+        puts
+        puts(yellow("Skipped #{total_skipped} blocked gem(s): #{all_skipped}"))
+      end
     end
   end
 end

@@ -9,6 +9,13 @@ module BundleSafeUpdate
 
     DEFAULT_MAX_THREADS = 32
 
+    DEFAULT_RISK_SIGNALS = {
+      'low_downloads' => { 'mode' => 'warn', 'threshold' => 1000 },
+      'stale_gem' => { 'mode' => 'warn', 'threshold_years' => 3 },
+      'new_owner' => { 'mode' => 'warn', 'threshold_days' => 90 },
+      'version_jump' => { 'mode' => 'warn' }
+    }.freeze
+
     DEFAULTS = {
       'cooldown_days' => DEFAULT_COOLDOWN_DAYS,
       'ignore_prefixes' => [],
@@ -18,23 +25,29 @@ module BundleSafeUpdate
       'max_threads' => DEFAULT_MAX_THREADS,
       'audit' => true,
       'verbose' => false,
-      'update' => false
+      'update' => false,
+      'risk_signals' => DEFAULT_RISK_SIGNALS
     }.freeze
 
     attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :trusted_owners,
-                :max_threads, :audit, :verbose, :update
+                :max_threads, :audit, :verbose, :update, :risk_signals
 
     def initialize(options = {})
       config = merge_configs(options)
-      @cooldown_days = config['cooldown_days']
-      @ignore_prefixes = config['ignore_prefixes']
-      @ignore_gems = config['ignore_gems']
-      @trusted_sources = config['trusted_sources']
-      @trusted_owners = config['trusted_owners']
-      @max_threads = config['max_threads']
-      @audit = config['audit']
-      @verbose = config['verbose']
-      @update = config['update']
+      assign_basic_options(config)
+      assign_risk_options(config)
+    end
+
+    def risk_signal_mode(signal_name)
+      @risk_signals.dig(signal_name.to_s, 'mode') || 'off'
+    end
+
+    def risk_signal_enabled?(signal_name)
+      risk_signal_mode(signal_name) != 'off'
+    end
+
+    def risk_signal_threshold(signal_name, key)
+      @risk_signals.dig(signal_name.to_s, key.to_s)
     end
 
     def ignored?(gem_name)
@@ -50,6 +63,22 @@ module BundleSafeUpdate
     end
 
     private
+
+    def assign_basic_options(config)
+      @cooldown_days = config['cooldown_days']
+      @ignore_prefixes = config['ignore_prefixes']
+      @ignore_gems = config['ignore_gems']
+      @trusted_sources = config['trusted_sources']
+      @trusted_owners = config['trusted_owners']
+      @max_threads = config['max_threads']
+    end
+
+    def assign_risk_options(config)
+      @audit = config['audit']
+      @verbose = config['verbose']
+      @update = config['update']
+      @risk_signals = config['risk_signals']
+    end
 
     def merge_configs(cli_options)
       config = DEFAULTS.dup

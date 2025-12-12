@@ -2,7 +2,7 @@
 
 module BundleSafeUpdate
   class GemChecker
-    CheckResult = Struct.new(:name, :version, :age_days, :allowed, :reason, keyword_init: true)
+    CheckResult = Struct.new(:name, :version, :current_version, :age_days, :allowed, :reason, keyword_init: true)
 
     DEFAULT_MAX_THREADS = 32
 
@@ -99,6 +99,7 @@ module BundleSafeUpdate
       CheckResult.new(
         name: gem_info.name,
         version: gem_info.newest_version,
+        current_version: gem_info.current_version,
         age_days: age_days,
         allowed: allowed,
         reason: reason

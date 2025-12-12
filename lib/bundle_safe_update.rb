@@ -8,6 +8,8 @@ require_relative 'bundle_safe_update/lockfile_parser'
 require_relative 'bundle_safe_update/outdated_checker'
 require_relative 'bundle_safe_update/gem_checker'
 require_relative 'bundle_safe_update/audit_checker'
+require_relative 'bundle_safe_update/risk_cache'
+require_relative 'bundle_safe_update/risk_checker'
 require_relative 'bundle_safe_update/cli'
 
 module BundleSafeUpdate
