@@ -24,22 +24,23 @@ module BundleSafeUpdate
       cached = owners_for(gem_name)
       return false if cached.empty?
 
-      cached.sort != current_owners.sort
+      cached.sort != current_owners.compact.sort
     end
 
     def detect_owner_change(gem_name, current_owners)
       cached = owners_for(gem_name)
-      return nil if cached.empty? || cached.sort == current_owners.sort
+      sanitized = current_owners.compact
+      return nil if cached.empty? || cached.sort == sanitized.sort
 
       OwnerChange.new(
         gem_name: gem_name,
         previous_owners: cached,
-        current_owners: current_owners
+        current_owners: sanitized
       )
     end
 
     def update_owners(gem_name, owners)
-      @data['owners'][gem_name] = owners.sort
+      @data['owners'][gem_name] = owners.compact.sort
     end
 
     def save

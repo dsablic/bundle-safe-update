@@ -103,6 +103,20 @@ RSpec.describe BundleSafeUpdate::RubygemsApi do
       owners = api.fetch_owners('bad-json')
       expect(owners).to eq([])
     end
+
+    it 'filters out nil handles' do
+      response_with_nils = [
+        { 'handle' => 'valid-owner', 'email' => 'valid@example.com' },
+        { 'handle' => nil, 'email' => 'nil-handle@example.com' },
+        { 'email' => 'missing-handle@example.com' }
+      ].to_json
+
+      stub_request(:get, 'https://rubygems.org/api/v1/gems/gem-with-nils/owners.json')
+        .to_return(status: 200, body: response_with_nils)
+
+      owners = api.fetch_owners('gem-with-nils')
+      expect(owners).to eq(['valid-owner'])
+    end
   end
 
   describe '#fetch_gem_info' do

@@ -55,7 +55,7 @@ module BundleSafeUpdate
 
       JSON
         .parse(response.body)
-        .map { |owner| owner['handle'] }
+        .filter_map { |owner| owner['handle'] }
     rescue JSON::ParserError
       []
     end
