@@ -50,6 +50,7 @@ module BundleSafeUpdate
       opts.on('--config PATH', 'Path to config file') { |path| options[:config] = path }
       opts.on('--cooldown DAYS', Integer, 'Minimum age in days') { |days| options[:cooldown] = days }
       opts.on('--update', 'Update gems that pass the cooldown check') { options[:update] = true }
+      opts.on('--no-audit', 'Skip vulnerability audit') { options[:audit] = false }
       opts.on('--dry-run', 'Show configuration without checking') { options[:dry_run] = true }
     end
 
@@ -93,13 +94,31 @@ module BundleSafeUpdate
     end
 
     def process_results(results, config, options)
-      allowed = results.select(&:allowed)
-      blocked = results.reject(&:allowed)
-
-      options[:json] ? output_json(results, blocked, config) : output_human(results, blocked, config)
+      allowed, blocked = partition_results(results)
+      output_results(results, blocked, config, options)
       perform_update(allowed, blocked) if config.update && allowed.any?
+      determine_exit_code(blocked, run_audit(config, options))
+    end
 
-      blocked.empty? ? EXIT_SUCCESS : EXIT_VIOLATIONS
+    def partition_results(results)
+      [results.select(&:allowed), results.reject(&:allowed)]
+    end
+
+    def output_results(results, blocked, config, options)
+      options[:json] ? output_json(results, blocked, config) : output_human(results, blocked, config)
+    end
+
+    def determine_exit_code(blocked, audit_result)
+      has_violations = blocked.any? || audit_result&.vulnerabilities&.any?
+      has_violations ? EXIT_VIOLATIONS : EXIT_SUCCESS
+    end
+
+    def run_audit(config, options)
+      return nil unless config.audit
+
+      audit_result = AuditChecker.new.check
+      output_audit_result(audit_result) unless options[:json]
+      audit_result
     end
 
     def perform_update(allowed, blocked)

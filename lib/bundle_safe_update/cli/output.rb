@@ -9,16 +9,15 @@ module BundleSafeUpdate
       end
 
       def config_lines(config)
-        [
-          "  Cooldown days: #{config.cooldown_days}",
-          "  Ignored gems: #{format_list(config.ignore_gems)}",
-          "  Ignored prefixes: #{format_list(config.ignore_prefixes)}",
-          "  Trusted sources: #{format_list(config.trusted_sources)}",
-          "  Trusted owners: #{format_list(config.trusted_owners)}",
-          "  Max threads: #{config.max_threads}",
-          "  Update: #{config.update}",
-          "  Verbose: #{config.verbose}"
-        ]
+        config_values(config).map { |label, value| "  #{label}: #{value}" }
+      end
+
+      def config_values(config)
+        { 'Cooldown days' => config.cooldown_days, 'Ignored gems' => format_list(config.ignore_gems),
+          'Ignored prefixes' => format_list(config.ignore_prefixes),
+          'Trusted sources' => format_list(config.trusted_sources),
+          'Trusted owners' => format_list(config.trusted_owners), 'Max threads' => config.max_threads,
+          'Audit' => config.audit, 'Update' => config.update, 'Verbose' => config.verbose }
       end
 
       def format_list(items)
@@ -63,6 +62,39 @@ module BundleSafeUpdate
         else
           puts(yellow("#{blocked.length} gem(s) violate minimum release age"))
         end
+      end
+
+      def output_audit_result(result)
+        return print_audit_unavailable unless result.available
+        return print_audit_error(result.error) if result.error
+
+        print_audit_results(result.vulnerabilities)
+      end
+
+      def print_audit_unavailable
+        warn(yellow('Warning: bundler-audit not installed. Run: gem install bundler-audit'))
+      end
+
+      def print_audit_error(error)
+        warn(red("Audit error: #{error}"))
+      end
+
+      def print_audit_results(vulnerabilities)
+        puts
+        puts(cyan('Checking for vulnerabilities...'))
+
+        if vulnerabilities.empty?
+          puts(green('No vulnerabilities found.'))
+        else
+          vulnerabilities.each { |v| print_vulnerability(v) }
+          puts
+          puts(yellow("#{vulnerabilities.length} vulnerability(ies) found"))
+        end
+      end
+
+      def print_vulnerability(vuln)
+        puts(red("VULNERABLE: #{vuln.gem_name} (#{vuln.cve}) - #{vuln.title}"))
+        puts("  Solution: #{vuln.solution}") if vuln.solution
       end
     end
   end

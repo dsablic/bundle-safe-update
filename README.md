@@ -29,6 +29,7 @@ bundle-safe-update
 | `--config PATH` | Path to config file |
 | `--cooldown DAYS` | Minimum age in days (overrides config) |
 | `--update` | Update gems that pass the cooldown check |
+| `--no-audit` | Skip vulnerability audit |
 | `--json` | Output in JSON format for CI systems |
 | `--verbose` | Enable verbose output |
 | `--dry-run` | Show configuration without checking |
@@ -85,6 +86,30 @@ Skipped 1 blocked gem(s): nokogiri
 
 This allows you to safely update gems while respecting the cooldown period for newly released versions.
 
+### Vulnerability Auditing
+
+By default, bundle-safe-update runs `bundle audit` to check for known security vulnerabilities. This requires the `bundler-audit` gem to be installed:
+
+```sh
+gem install bundler-audit
+```
+
+If `bundler-audit` is not installed, a warning is displayed but the check continues. The audit database is automatically updated before each check.
+
+Example output with vulnerabilities:
+
+```
+OK: rails (7.1.3.2) - satisfies minimum age
+
+Checking for vulnerabilities...
+VULNERABLE: actionpack (CVE-2024-1234) - Possible XSS vulnerability
+  Solution: upgrade to >= 7.0.8.1
+
+1 vulnerability(ies) found
+```
+
+To skip the audit check, use `--no-audit` or set `audit: false` in config.
+
 ## Configuration
 
 Create `.bundle-safe-update.yml` in your project root or home directory:
@@ -116,6 +141,9 @@ trusted_owners:
 
 # Automatically update gems that pass the cooldown check (default: false)
 update: false
+
+# Run vulnerability audit with bundler-audit (default: true)
+audit: true
 
 # Enable verbose output
 verbose: false

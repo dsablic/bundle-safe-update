@@ -7,7 +7,7 @@ module BundleSafeUpdate
     DEFAULT_COOLDOWN_DAYS = 14
     CONFIG_FILENAME = '.bundle-safe-update.yml'
 
-    DEFAULT_MAX_THREADS = 8
+    DEFAULT_MAX_THREADS = 32
 
     DEFAULTS = {
       'cooldown_days' => DEFAULT_COOLDOWN_DAYS,
@@ -16,12 +16,13 @@ module BundleSafeUpdate
       'trusted_sources' => [],
       'trusted_owners' => [],
       'max_threads' => DEFAULT_MAX_THREADS,
+      'audit' => true,
       'verbose' => false,
       'update' => false
     }.freeze
 
     attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :trusted_owners,
-                :max_threads, :verbose, :update
+                :max_threads, :audit, :verbose, :update
 
     def initialize(options = {})
       config = merge_configs(options)
@@ -31,6 +32,7 @@ module BundleSafeUpdate
       @trusted_sources = config['trusted_sources']
       @trusted_owners = config['trusted_owners']
       @max_threads = config['max_threads']
+      @audit = config['audit']
       @verbose = config['verbose']
       @update = config['update']
     end
@@ -84,6 +86,7 @@ module BundleSafeUpdate
 
     def apply_cli_overrides(config, options)
       config['cooldown_days'] = options[:cooldown] if options[:cooldown]
+      config['audit'] = options[:audit] if options.key?(:audit)
       config['verbose'] = options[:verbose] if options.key?(:verbose)
       config['update'] = options[:update] if options.key?(:update)
       config

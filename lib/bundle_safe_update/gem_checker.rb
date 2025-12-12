@@ -4,7 +4,7 @@ module BundleSafeUpdate
   class GemChecker
     CheckResult = Struct.new(:name, :version, :age_days, :allowed, :reason, keyword_init: true)
 
-    DEFAULT_MAX_THREADS = 8
+    DEFAULT_MAX_THREADS = 32
 
     def initialize(config:, api: nil, lockfile_parser: nil, max_threads: nil)
       @config = config
