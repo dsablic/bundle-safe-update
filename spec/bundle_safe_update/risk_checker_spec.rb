@@ -252,8 +252,9 @@ RSpec.describe BundleSafeUpdate::RiskChecker do
 
     before do
       allow(lockfile_parser).to receive(:source_for).with('private-gem').and_return('cloudsmith.io/myorg/gems')
+      five_years_ago = Time.now - (5 * 365 * 24 * 60 * 60)
       allow(api).to receive(:fetch_gem_info).and_return(
-        BundleSafeUpdate::RubygemsApi::GemInfo.new(downloads: 100, version_created_at: Time.now - (5 * 365 * 24 * 60 * 60))
+        BundleSafeUpdate::RubygemsApi::GemInfo.new(downloads: 100, version_created_at: five_years_ago)
       )
       allow(api).to receive(:fetch_owners).and_return(['someone'])
       allow(cache).to receive(:detect_owner_change).and_return(
