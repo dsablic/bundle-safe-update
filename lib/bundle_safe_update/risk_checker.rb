@@ -9,10 +9,11 @@ module BundleSafeUpdate
 
     SECONDS_PER_YEAR = 365.25 * 24 * 60 * 60
 
-    def initialize(config:, api: nil, cache: nil, max_threads: nil)
+    def initialize(config:, api: nil, cache: nil, lockfile_parser: nil, max_threads: nil)
       @config = config
       @api = api || RubygemsApi.new
       @cache = cache || RiskCache.new
+      @lockfile_parser = lockfile_parser || LockfileParser.new
       @max_threads = max_threads || @config.max_threads
     end
 
@@ -70,6 +71,7 @@ module BundleSafeUpdate
 
     def check_low_downloads(gem_result)
       return [] unless @config.risk_signal_enabled?(:low_downloads)
+      return [] unless from_rubygems?(gem_result.name)
 
       gem_info = @api.fetch_gem_info(gem_result.name)
       return [] unless gem_info
@@ -82,6 +84,7 @@ module BundleSafeUpdate
 
     def check_stale_gem(gem_result)
       return [] unless @config.risk_signal_enabled?(:stale_gem)
+      return [] unless from_rubygems?(gem_result.name)
 
       gem_info = @api.fetch_gem_info(gem_result.name)
       return [] unless gem_info&.version_created_at
@@ -95,6 +98,7 @@ module BundleSafeUpdate
 
     def check_new_owner(gem_result)
       return [] unless @config.risk_signal_enabled?(:new_owner)
+      return [] unless from_rubygems?(gem_result.name)
 
       current_owners = @api.fetch_owners(gem_result.name)
       return [] if current_owners.empty?
@@ -104,6 +108,11 @@ module BundleSafeUpdate
       return [] unless change
 
       [build_signal(:new_owner, owner_change_message(change))]
+    end
+
+    def from_rubygems?(gem_name)
+      source = @lockfile_parser.source_for(gem_name)
+      source.nil? || source.include?('rubygems.org')
     end
 
     def check_version_jump(gem_result)

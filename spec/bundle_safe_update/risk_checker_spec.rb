@@ -4,7 +4,10 @@ RSpec.describe BundleSafeUpdate::RiskChecker do
   let(:config) { BundleSafeUpdate::Config.new }
   let(:api) { instance_double(BundleSafeUpdate::RubygemsApi) }
   let(:cache) { instance_double(BundleSafeUpdate::RiskCache) }
-  let(:checker) { described_class.new(config: config, api: api, cache: cache, max_threads: 1) }
+  let(:lockfile_parser) { instance_double(BundleSafeUpdate::LockfileParser) }
+  let(:checker) do
+    described_class.new(config: config, api: api, cache: cache, lockfile_parser: lockfile_parser, max_threads: 1)
+  end
 
   let(:gem_result) do
     BundleSafeUpdate::GemChecker::CheckResult.new(
@@ -23,6 +26,7 @@ RSpec.describe BundleSafeUpdate::RiskChecker do
     allow(cache).to receive(:save)
     allow(api).to receive(:fetch_owners).and_return([])
     allow(api).to receive(:fetch_gem_info).and_return(nil)
+    allow(lockfile_parser).to receive(:source_for).and_return(nil)
   end
 
   describe '#check_all' do
@@ -231,6 +235,50 @@ RSpec.describe BundleSafeUpdate::RiskChecker do
       it 'does not trigger any signals' do
         expect(checker.check_all([gem_result])).to eq([])
       end
+    end
+  end
+
+  describe 'non-RubyGems sources' do
+    let(:private_gem) do
+      BundleSafeUpdate::GemChecker::CheckResult.new(
+        name: 'private-gem',
+        version: '2.0.0',
+        current_version: '1.0.0',
+        age_days: 42,
+        allowed: true,
+        reason: 'satisfies minimum age'
+      )
+    end
+
+    before do
+      allow(lockfile_parser).to receive(:source_for).with('private-gem').and_return('cloudsmith.io/myorg/gems')
+      allow(api).to receive(:fetch_gem_info).and_return(
+        BundleSafeUpdate::RubygemsApi::GemInfo.new(downloads: 100, version_created_at: Time.now - (5 * 365 * 24 * 60 * 60))
+      )
+      allow(api).to receive(:fetch_owners).and_return(['someone'])
+      allow(cache).to receive(:detect_owner_change).and_return(
+        BundleSafeUpdate::RiskCache::OwnerChange.new(
+          gem_name: 'private-gem',
+          previous_owners: ['original'],
+          current_owners: ['someone']
+        )
+      )
+    end
+
+    it 'skips API-based checks for gems from private sources' do
+      results = checker.check_all([private_gem])
+
+      # Only version_jump should trigger (doesn't use API)
+      expect(results.length).to eq(1)
+      expect(results.first.signals.length).to eq(1)
+      expect(results.first.signals.first.type).to eq(:version_jump)
+    end
+
+    it 'does not call RubyGems API for private source gems' do
+      checker.check_all([private_gem])
+
+      expect(api).not_to have_received(:fetch_gem_info).with('private-gem')
+      expect(api).not_to have_received(:fetch_owners).with('private-gem')
     end
   end
 end
