@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'bundler'
 require 'open3'
 
 module BundleSafeUpdate
@@ -21,8 +22,10 @@ module BundleSafeUpdate
     end
 
     def audit_available?
-      _stdout, _stderr, status = Open3.capture3('bundle', 'audit', '--version')
-      status.success?
+      Bundler.with_unbundled_env do
+        _stdout, _stderr, status = Open3.capture3('bundle', 'audit', '--version')
+        status.success?
+      end
     rescue Errno::ENOENT
       false
     end
@@ -30,7 +33,9 @@ module BundleSafeUpdate
     private
 
     def execute_command(command)
-      Open3.capture3(*command)
+      Bundler.with_unbundled_env do
+        Open3.capture3(*command)
+      end
     end
 
     def unavailable_result

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'bundler'
 require 'open3'
 
 module BundleSafeUpdate
@@ -20,8 +21,19 @@ module BundleSafeUpdate
     private
 
     def execute_command(command)
-      stdout, _stderr, _status = Open3.capture3(*command)
+      stdout, stderr, status = Bundler.with_unbundled_env do
+        Open3.capture3(*command)
+      end
+      check_for_errors(stderr, status)
       stdout
+    end
+
+    def check_for_errors(stderr, status)
+      return if status.success? || status.exitstatus == 1
+
+      raise stderr.strip if stderr.include?('Your Ruby version is')
+
+      raise "bundle outdated failed with exit code #{status.exitstatus}: #{stderr.strip}"
     end
 
     def parse_output(output)

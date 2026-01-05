@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'bundler'
 require 'optparse'
 require 'json'
 require_relative 'cli/output'
@@ -142,7 +143,10 @@ module BundleSafeUpdate
 
       gem_names = updatable.map(&:name)
       print_update_start(gem_names)
-      print_update_result(system('bundle', 'update', *gem_names))
+      result = Bundler.with_unbundled_env do
+        system('bundle', 'update', *gem_names)
+      end
+      print_update_result(result)
       print_skipped(blocked, risk_blocked_names)
     end
 
