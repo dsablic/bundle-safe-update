@@ -19,11 +19,11 @@ module BundleSafeUpdate
     end
 
     def run(args)
-      options = parse_options(args)
+      options, gems = parse_options(args)
       config = Config.new(options)
       return dry_run(config) if options[:dry_run]
 
-      results = check_gems(config, options[:verbose])
+      results = check_gems(config, options[:verbose], gems)
       process_results(results, config, options)
     rescue StandardError => e
       handle_error(e, options[:verbose])
@@ -35,12 +35,12 @@ module BundleSafeUpdate
     def parse_options(args)
       options = {}
       build_option_parser(options).parse!(args)
-      options
+      [options, args]
     end
 
     def build_option_parser(options)
       OptionParser.new do |opts|
-        opts.banner = 'Usage: bundle-safe-update [options]'
+        opts.banner = 'Usage: bundle-safe-update [options] [gem1 gem2 ...]'
         define_config_options(opts, options)
         define_output_options(opts, options)
         define_info_options(opts)
@@ -78,16 +78,16 @@ module BundleSafeUpdate
       EXIT_SUCCESS
     end
 
-    def check_gems(config, verbose)
+    def check_gems(config, verbose, gems = [])
       puts(cyan('Checking gem versions...')) if verbose
       outdated_gems = OutdatedChecker
-                      .new
+                      .new(gems:)
                       .outdated_gems
       return log_empty_result(verbose) if outdated_gems.empty?
 
       puts(cyan("Found #{outdated_gems.length} outdated gem(s)")) if verbose
       GemChecker
-        .new(config: config, max_threads: config.max_threads)
+        .new(config:, max_threads: config.max_threads)
         .check_all(outdated_gems)
     end
 

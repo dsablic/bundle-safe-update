@@ -9,12 +9,14 @@ module BundleSafeUpdate
 
     BUNDLE_COMMAND = %w[bundle outdated --parseable].freeze
 
-    def initialize(executor: nil)
+    def initialize(gems: [], executor: nil)
+      @gems = gems
       @executor = executor || method(:execute_command)
     end
 
     def outdated_gems
-      output = @executor.call(BUNDLE_COMMAND)
+      command = BUNDLE_COMMAND + @gems
+      output = @executor.call(command)
       parse_output(output)
     end
 

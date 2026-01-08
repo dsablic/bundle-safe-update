@@ -19,7 +19,19 @@ gem 'bundle-safe-update', group: :development
 Run in your project directory:
 
 ```sh
+bundle-safe-update [options] [gem1 gem2 ...]
+```
+
+Check all outdated gems:
+
+```sh
 bundle-safe-update
+```
+
+Check and update specific gems:
+
+```sh
+bundle-safe-update rails sidekiq
 ```
 
 ### CLI Options
@@ -86,7 +98,19 @@ Bundle updated successfully.
 Skipped 1 blocked gem(s): nokogiri
 ```
 
-This allows you to safely update gems while respecting the cooldown period for newly released versions.
+### Updating Specific Gems
+
+To check and update specific gems, pass their names as arguments:
+
+```sh
+bundle-safe-update --update rails sidekiq
+```
+
+Only the specified gems are checked and updated if they pass the cooldown check. Without `--update`, specific gems are checked but not updated:
+
+```sh
+bundle-safe-update rails sidekiq
+```
 
 ### Vulnerability Auditing
 
