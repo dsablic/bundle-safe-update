@@ -41,6 +41,7 @@ bundle-safe-update rails sidekiq
 | `--config PATH` | Path to config file |
 | `--cooldown DAYS` | Minimum age in days (overrides config) |
 | `--update` | Update gems that pass the cooldown check |
+| `--warn-only` | Report violations but exit with success |
 | `--no-audit` | Skip vulnerability audit |
 | `--no-risk` | Skip risk signal checking |
 | `--refresh-cache` | Refresh owner cache without warnings |
@@ -219,6 +220,9 @@ update: false
 
 # Run vulnerability audit with bundler-audit (default: true)
 audit: true
+
+# Report violations but always exit with success (default: false)
+warn_only: false
 
 # Enable verbose output
 verbose: false

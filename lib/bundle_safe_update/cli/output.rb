@@ -17,7 +17,8 @@ module BundleSafeUpdate
           'Ignored prefixes' => format_list(config.ignore_prefixes),
           'Trusted sources' => format_list(config.trusted_sources),
           'Trusted owners' => format_list(config.trusted_owners), 'Max threads' => config.max_threads,
-          'Audit' => config.audit, 'Update' => config.update, 'Verbose' => config.verbose }
+          'Audit' => config.audit, 'Update' => config.update, 'Warn only' => config.warn_only,
+          'Verbose' => config.verbose }
       end
 
       def format_list(items)

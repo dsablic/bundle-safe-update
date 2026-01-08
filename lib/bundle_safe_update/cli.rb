@@ -3,11 +3,13 @@
 require 'bundler'
 require 'optparse'
 require 'json'
+require_relative 'cli/options'
 require_relative 'cli/output'
 
 module BundleSafeUpdate
   class CLI
     include ColorOutput
+    include Options
     include Output
 
     EXIT_SUCCESS = 0
@@ -38,41 +40,6 @@ module BundleSafeUpdate
       [options, args]
     end
 
-    def build_option_parser(options)
-      OptionParser.new do |opts|
-        opts.banner = 'Usage: bundle-safe-update [options] [gem1 gem2 ...]'
-        define_config_options(opts, options)
-        define_output_options(opts, options)
-        define_info_options(opts)
-      end
-    end
-
-    def define_config_options(opts, options)
-      opts.on('--config PATH', 'Path to config file') { |path| options[:config] = path }
-      opts.on('--cooldown DAYS', Integer, 'Minimum age in days') { |days| options[:cooldown] = days }
-      opts.on('--update', 'Update gems that pass the cooldown check') { options[:update] = true }
-      opts.on('--no-audit', 'Skip vulnerability audit') { options[:audit] = false }
-      opts.on('--no-risk', 'Skip risk signal checking') { options[:risk] = false }
-      opts.on('--refresh-cache', 'Refresh owner cache without warnings') { options[:refresh_cache] = true }
-      opts.on('--dry-run', 'Show configuration without checking') { options[:dry_run] = true }
-    end
-
-    def define_output_options(opts, options)
-      opts.on('--json', 'Output in JSON format') { options[:json] = true }
-      opts.on('--verbose', 'Enable verbose output') { options[:verbose] = true }
-    end
-
-    def define_info_options(opts)
-      opts.on('-v', '--version', 'Show version') do
-        puts("bundle-safe-update #{VERSION}")
-        exit(EXIT_SUCCESS)
-      end
-      opts.on('-h', '--help', 'Show this help') do
-        puts(opts)
-        exit(EXIT_SUCCESS)
-      end
-    end
-
     def dry_run(config)
       dry_run_output(config)
       EXIT_SUCCESS
@@ -101,7 +68,7 @@ module BundleSafeUpdate
       output_results(results, blocked, config, options)
       risk_results = run_risk_check(results, config, options)
       perform_update(allowed, blocked, risk_results) if config.update && allowed.any?
-      determine_exit_code(blocked, risk_results, run_audit(config, options))
+      determine_exit_code(config, blocked, risk_results, run_audit(config, options))
     end
 
     def run_risk_check(results, config, options)
@@ -122,10 +89,15 @@ module BundleSafeUpdate
       options[:json] ? output_json(results, blocked, config) : output_human(results, blocked, config)
     end
 
-    def determine_exit_code(blocked, risk_results, audit_result)
-      has_risk_blocks = risk_results.any?(&:blocked)
-      has_violations = blocked.any? || has_risk_blocks || audit_result&.vulnerabilities&.any?
-      has_violations ? EXIT_VIOLATIONS : EXIT_SUCCESS
+    def determine_exit_code(config, blocked, risk_results, audit_result)
+      return EXIT_SUCCESS if config.warn_only
+      return EXIT_SUCCESS unless violations?(blocked, risk_results, audit_result)
+
+      EXIT_VIOLATIONS
+    end
+
+    def violations?(blocked, risk_results, audit_result)
+      blocked.any? || risk_results.any?(&:blocked) || audit_result&.vulnerabilities&.any?
     end
 
     def run_audit(config, options)

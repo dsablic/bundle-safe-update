@@ -26,11 +26,12 @@ module BundleSafeUpdate
       'audit' => true,
       'verbose' => false,
       'update' => false,
+      'warn_only' => false,
       'risk_signals' => DEFAULT_RISK_SIGNALS
     }.freeze
 
     attr_reader :cooldown_days, :ignore_prefixes, :ignore_gems, :trusted_sources, :trusted_owners,
-                :max_threads, :audit, :verbose, :update, :risk_signals
+                :max_threads, :audit, :verbose, :update, :warn_only, :risk_signals
 
     def initialize(options = {})
       config = merge_configs(options)
@@ -77,6 +78,7 @@ module BundleSafeUpdate
       @audit = config['audit']
       @verbose = config['verbose']
       @update = config['update']
+      @warn_only = config['warn_only']
       @risk_signals = config['risk_signals']
     end
 
@@ -118,6 +120,7 @@ module BundleSafeUpdate
       config['audit'] = options[:audit] if options.key?(:audit)
       config['verbose'] = options[:verbose] if options.key?(:verbose)
       config['update'] = options[:update] if options.key?(:update)
+      config['warn_only'] = options[:warn_only] if options.key?(:warn_only)
       config
     end
 
