@@ -119,12 +119,14 @@ module BundleSafeUpdate
 
     def apply_cli_overrides(config, options)
       config['cooldown_days'] = options[:cooldown] if options[:cooldown]
-      config['audit'] = options[:audit] if options.key?(:audit)
-      config['verbose'] = options[:verbose] if options.key?(:verbose)
-      config['update'] = options[:update] if options.key?(:update)
-      config['lock_only'] = options[:lock_only] if options.key?(:lock_only)
-      config['warn_only'] = options[:warn_only] if options.key?(:warn_only)
+      apply_boolean_overrides(config, options)
       config
+    end
+
+    def apply_boolean_overrides(config, options)
+      %i[audit verbose update lock_only warn_only].each do |key|
+        config[key.to_s] = options[key] if options.key?(key)
+      end
     end
 
     def deep_merge(base, override)

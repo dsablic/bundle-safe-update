@@ -114,20 +114,21 @@ module BundleSafeUpdate
       return if updatable.empty?
 
       gem_names = updatable.map(&:name)
-      command = update_command(gem_names, config.lock_only)
-      print_update_start(gem_names, config.lock_only)
-      result = Bundler.with_unbundled_env do
-        system(*command)
-      end
-      print_update_result(result)
+      run_bundle_update(gem_names, config.lock_only)
       print_skipped(blocked, risk_blocked_names)
+    end
+
+    def run_bundle_update(gem_names, lock_only)
+      print_update_start(gem_names, lock_only:)
+      result = Bundler.with_unbundled_env { system(*update_command(gem_names, lock_only)) }
+      print_update_result(result)
     end
 
     def update_command(gem_names, lock_only)
       if lock_only
-        ['bundle', 'lock', '--update', *gem_names]
+        %w[bundle lock --update] + gem_names
       else
-        ['bundle', 'update', *gem_names]
+        %w[bundle update] + gem_names
       end
     end
 

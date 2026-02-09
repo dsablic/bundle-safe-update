@@ -126,7 +126,7 @@ module BundleSafeUpdate
         puts(yellow("#{warnings} risk warning(s)")) if warnings.positive?
       end
 
-      def print_update_start(gem_names, lock_only = false)
+      def print_update_start(gem_names, lock_only: false)
         puts
         if lock_only
           puts(cyan("Updating lock file for #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
