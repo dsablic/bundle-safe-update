@@ -67,7 +67,7 @@ module BundleSafeUpdate
       allowed, blocked = partition_results(results)
       output_results(results, blocked, config, options)
       risk_results = run_risk_check(results, config, options)
-      perform_update(allowed, blocked, risk_results) if config.update && allowed.any?
+      perform_update(allowed, blocked, risk_results, config) if config.update && allowed.any?
       determine_exit_code(config, blocked, risk_results, run_audit(config, options))
     end
 
@@ -108,18 +108,27 @@ module BundleSafeUpdate
       audit_result
     end
 
-    def perform_update(allowed, blocked, risk_results)
+    def perform_update(allowed, blocked, risk_results, config)
       risk_blocked_names = risk_results.select(&:blocked).map(&:gem_name)
       updatable = allowed.reject { |r| risk_blocked_names.include?(r.name) }
       return if updatable.empty?
 
       gem_names = updatable.map(&:name)
-      print_update_start(gem_names)
+      command = update_command(gem_names, config.lock_only)
+      print_update_start(gem_names, config.lock_only)
       result = Bundler.with_unbundled_env do
-        system('bundle', 'update', *gem_names)
+        system(*command)
       end
       print_update_result(result)
       print_skipped(blocked, risk_blocked_names)
+    end
+
+    def update_command(gem_names, lock_only)
+      if lock_only
+        ['bundle', 'lock', '--update', *gem_names]
+      else
+        ['bundle', 'update', *gem_names]
+      end
     end
 
     def handle_error(error, verbose)

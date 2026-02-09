@@ -289,6 +289,32 @@ RSpec.describe BundleSafeUpdate::CLI do
           cli.run(['--update'])
         end
       end
+
+      context 'with --lock-only flag' do
+        before do
+          allow(outdated_checker).to receive(:outdated_gems).and_return([allowed_gem])
+          allow(gem_checker).to receive(:check_all).and_return([allowed_result])
+        end
+
+        it 'runs bundle lock --update instead of bundle update' do
+          expect(cli).to receive(:system)
+            .with('bundle', 'lock', '--update', 'rails')
+            .and_return(true)
+          cli.run(['--update', '--lock-only'])
+        end
+
+        it 'outputs lock-only message' do
+          allow(cli).to receive(:system).and_return(true)
+          expect { cli.run(['--update', '--lock-only']) }
+            .to output(/Updating lock file for 1 gem\(s\)/).to_stdout
+        end
+
+        it 'outputs the bundle lock command' do
+          allow(cli).to receive(:system).and_return(true)
+          expect { cli.run(['--update', '--lock-only']) }
+            .to output(/Running: bundle lock --update rails/).to_stdout
+        end
+      end
     end
   end
 

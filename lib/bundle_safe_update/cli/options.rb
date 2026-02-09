@@ -21,6 +21,7 @@ module BundleSafeUpdate
         opts.on('--config PATH', 'Path to config file') { |path| options[:config] = path }
         opts.on('--cooldown DAYS', Integer, 'Minimum age in days') { |days| options[:cooldown] = days }
         opts.on('--update', 'Update gems that pass the cooldown check') { options[:update] = true }
+        opts.on('--lock-only', 'Update Gemfile.lock without installing gems') { options[:lock_only] = true }
         opts.on('--warn-only', 'Report violations but exit with success') { options[:warn_only] = true }
         opts.on('--dry-run', 'Show configuration without checking') { options[:dry_run] = true }
       end

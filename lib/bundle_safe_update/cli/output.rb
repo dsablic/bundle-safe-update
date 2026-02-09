@@ -17,7 +17,8 @@ module BundleSafeUpdate
           'Ignored prefixes' => format_list(config.ignore_prefixes),
           'Trusted sources' => format_list(config.trusted_sources),
           'Trusted owners' => format_list(config.trusted_owners), 'Max threads' => config.max_threads,
-          'Audit' => config.audit, 'Update' => config.update, 'Warn only' => config.warn_only,
+          'Audit' => config.audit, 'Update' => config.update, 'Lock only' => config.lock_only,
+          'Warn only' => config.warn_only,
           'Verbose' => config.verbose }
       end
 
@@ -125,10 +126,15 @@ module BundleSafeUpdate
         puts(yellow("#{warnings} risk warning(s)")) if warnings.positive?
       end
 
-      def print_update_start(gem_names)
+      def print_update_start(gem_names, lock_only = false)
         puts
-        puts(cyan("Updating #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
-        puts(cyan("Running: bundle update #{gem_names.join(' ')}"))
+        if lock_only
+          puts(cyan("Updating lock file for #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
+          puts(cyan("Running: bundle lock --update #{gem_names.join(' ')}"))
+        else
+          puts(cyan("Updating #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
+          puts(cyan("Running: bundle update #{gem_names.join(' ')}"))
+        end
       end
 
       def print_update_result(success)
