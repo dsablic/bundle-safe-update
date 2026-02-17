@@ -10,7 +10,7 @@ RSpec.describe BundleSafeUpdate::LockfileParser do
           nokogiri (1.16.4)
 
       GEM
-        remote: https://ruby.cloudsmith.io/readcube/main/
+        remote: https://gems.example.com/private/
         specs:
           mycompany-auth (1.2.0)
           mycompany-utils (0.5.0)
@@ -47,15 +47,15 @@ RSpec.describe BundleSafeUpdate::LockfileParser do
 
     it 'maps private source gems correctly' do
       sources = parser.gem_sources
-      expect(sources['mycompany-auth']).to eq('https://ruby.cloudsmith.io/readcube/main/')
-      expect(sources['mycompany-utils']).to eq('https://ruby.cloudsmith.io/readcube/main/')
+      expect(sources['mycompany-auth']).to eq('https://gems.example.com/private/')
+      expect(sources['mycompany-utils']).to eq('https://gems.example.com/private/')
     end
   end
 
   describe '#source_for' do
     it 'returns the source URL for a gem' do
       expect(parser.source_for('rails')).to eq('https://rubygems.org/')
-      expect(parser.source_for('mycompany-auth')).to eq('https://ruby.cloudsmith.io/readcube/main/')
+      expect(parser.source_for('mycompany-auth')).to eq('https://gems.example.com/private/')
     end
 
     it 'returns nil for unknown gems' do

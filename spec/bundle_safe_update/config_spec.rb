@@ -181,7 +181,7 @@ RSpec.describe BundleSafeUpdate::Config do
       allow(File).to receive(:exist?).with(local_config_path).and_return(true)
       allow(YAML).to receive(:safe_load_file).with(local_config_path).and_return({
                                                                                    'trusted_sources' => %w[
-                                                                                     ruby.cloudsmith.io
+                                                                                     gems.example.com
                                                                                      gems.mycompany.com
                                                                                    ]
                                                                                  })
@@ -190,7 +190,7 @@ RSpec.describe BundleSafeUpdate::Config do
     let(:config) { described_class.new }
 
     it 'returns true for URLs matching trusted sources' do
-      expect(config.trusted_source?('https://ruby.cloudsmith.io/readcube/main/')).to be(true)
+      expect(config.trusted_source?('https://gems.example.com/private/')).to be(true)
       expect(config.trusted_source?('https://gems.mycompany.com/private/')).to be(true)
     end
 
@@ -207,7 +207,7 @@ RSpec.describe BundleSafeUpdate::Config do
   describe '#trusted_source? with empty trusted_sources' do
     it 'returns false when no trusted sources configured' do
       config = described_class.new
-      expect(config.trusted_source?('https://ruby.cloudsmith.io/readcube/main/')).to be(false)
+      expect(config.trusted_source?('https://gems.example.com/private/')).to be(false)
     end
   end
 

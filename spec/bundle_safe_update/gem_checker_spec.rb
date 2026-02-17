@@ -77,9 +77,9 @@ RSpec.describe BundleSafeUpdate::GemChecker do
         allow(config).to receive(:ignored?).with('nokogiri').and_return(false)
         allow(lockfile_parser).to receive(:source_for)
           .with('nokogiri')
-          .and_return('https://ruby.cloudsmith.io/readcube/main/')
+          .and_return('https://gems.example.com/private/')
         allow(config).to receive(:trusted_source?)
-          .with('https://ruby.cloudsmith.io/readcube/main/')
+          .with('https://gems.example.com/private/')
           .and_return(true)
       end
 
