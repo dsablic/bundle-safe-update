@@ -207,8 +207,8 @@ ignore_prefixes:
 # Trust gems from specific sources (skip cooldown check)
 # Useful for private gem servers where gems are already vetted
 trusted_sources:
-  - ruby.cloudsmith.io
   - gems.mycompany.com
+  - gemserver.internal.example.com
 
 # Trust gems by RubyGems owner/publisher (skip cooldown check)
 # Useful for well-known publishers like AWS, Google, etc.
@@ -273,18 +273,6 @@ curl https://rubygems.org/api/v1/gems/{gem_name}/owners.json
 | 2 | Unexpected error |
 
 ## CI Integration
-
-### Bitbucket Pipelines
-
-```yaml
-pipelines:
-  default:
-    - step:
-        name: Check gem versions
-        script:
-          - gem install bundle-safe-update
-          - bundle-safe-update --json
-```
 
 ### AWS CodeBuild
 

@@ -6,15 +6,18 @@ Gem::Specification.new do |spec|
   spec.name = 'bundle-safe-update'
   spec.version = BundleSafeUpdate::VERSION
   spec.authors = ['Denis Sablic']
-  spec.email = ['denis@readcube.com']
+  spec.email = ['denis.sablic@gmail.com']
 
   spec.summary = 'Enforce minimum release age for Ruby gems during updates'
   spec.description = 'A CLI tool that prevents installation of gem versions ' \
                      'that are too new (e.g., <14 days old), helping protect ' \
                      'against supply chain attacks.'
+  spec.homepage = 'https://github.com/dsablic/bundle-safe-update'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.2.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.metadata['source_code_uri'] = 'https://github.com/dsablic/bundle-safe-update'
+  spec.metadata['changelog_uri'] = 'https://github.com/dsablic/bundle-safe-update/releases'
 
   spec.files = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|
