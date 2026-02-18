@@ -1,5 +1,9 @@
 # bundle-safe-update
 
+[![CI](https://github.com/dsablic/bundle-safe-update/actions/workflows/ci.yml/badge.svg)](https://github.com/dsablic/bundle-safe-update/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/bundle-safe-update.svg)](https://badge.fury.io/rb/bundle-safe-update)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A CLI tool that enforces a minimum release age for Ruby gems during updates, preventing installation of gem versions that are "too new" (e.g., less than 14 days old). This helps protect against supply chain attacks by ensuring gems have had time for community review.
 
 ## Installation
