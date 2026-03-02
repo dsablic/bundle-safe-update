@@ -130,10 +130,10 @@ module BundleSafeUpdate
         puts
         if lock_only
           puts(cyan("Updating lock file for #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
-          puts(cyan("Running: bundle lock --update #{gem_names.join(' ')}"))
+          puts(cyan("Running: bundle lock --conservative --update #{gem_names.join(' ')}"))
         else
           puts(cyan("Updating #{gem_names.length} gem(s): #{gem_names.join(', ')}"))
-          puts(cyan("Running: bundle update #{gem_names.join(' ')}"))
+          puts(cyan("Running: bundle update --conservative #{gem_names.join(' ')}"))
         end
       end
 

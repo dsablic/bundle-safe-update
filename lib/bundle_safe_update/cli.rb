@@ -126,9 +126,9 @@ module BundleSafeUpdate
 
     def update_command(gem_names, lock_only)
       if lock_only
-        %w[bundle lock --update] + gem_names
+        %w[bundle lock --conservative --update] + gem_names
       else
-        %w[bundle update] + gem_names
+        %w[bundle update --conservative] + gem_names
       end
     end
 

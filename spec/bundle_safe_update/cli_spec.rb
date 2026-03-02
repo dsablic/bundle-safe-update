@@ -222,7 +222,7 @@ RSpec.describe BundleSafeUpdate::CLI do
 
         it 'runs bundle update for allowed gems' do
           expect(cli).to receive(:system)
-            .with('bundle', 'update', 'rails')
+            .with('bundle', 'update', '--conservative', 'rails')
             .and_return(true)
           cli.run(['--update'])
         end
@@ -250,7 +250,7 @@ RSpec.describe BundleSafeUpdate::CLI do
 
         it 'runs bundle update only for allowed gems' do
           expect(cli).to receive(:system)
-            .with('bundle', 'update', 'rails')
+            .with('bundle', 'update', '--conservative', 'rails')
             .and_return(true)
           cli.run(['--update'])
         end
@@ -298,7 +298,7 @@ RSpec.describe BundleSafeUpdate::CLI do
 
         it 'runs bundle lock --update instead of bundle update' do
           expect(cli).to receive(:system)
-            .with('bundle', 'lock', '--update', 'rails')
+            .with('bundle', 'lock', '--conservative', '--update', 'rails')
             .and_return(true)
           cli.run(['--update', '--lock-only'])
         end
@@ -312,7 +312,7 @@ RSpec.describe BundleSafeUpdate::CLI do
         it 'outputs the bundle lock command' do
           allow(cli).to receive(:system).and_return(true)
           expect { cli.run(['--update', '--lock-only']) }
-            .to output(/Running: bundle lock --update rails/).to_stdout
+            .to output(/Running: bundle lock --conservative --update rails/).to_stdout
         end
       end
     end
